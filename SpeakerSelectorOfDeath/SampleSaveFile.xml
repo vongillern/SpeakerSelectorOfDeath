@@ -1,0 +1,79 @@
+﻿<ViewModel xmlns="http://schemas.datacontract.org/2004/07/SpeakerSelectorOfDeath" xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+  <_rooms/>
+  <_selectedSessions>
+    <Session>
+      <_description i:nil="true"/>
+      <_level i:nil="true"/>
+      <_selection i:nil="true"/>
+      <_title>session1A</_title>
+    </Session>
+    <Session>
+      <_description i:nil="true"/>
+      <_level i:nil="true"/>
+      <_selection i:nil="true"/>
+      <_title>session2A</_title>
+    </Session>
+  </_selectedSessions>
+  <_speakers>
+    <Speaker>
+      <_bio i:nil="true"/>
+      <_email i:nil="true"/>
+      <_headshotUrl i:nil="true"/>
+      <_homeTown i:nil="true"/>
+      <_name>speaker1</_name>
+      <_notesToOrganizer i:nil="true"/>
+      <_sessions>
+        <Session>
+          <_description i:nil="true"/>
+          <_level i:nil="true"/>
+          <_selection i:nil="true"/>
+          <_title>session1A</_title>
+        </Session>
+        <Session>
+          <_description i:nil="true"/>
+          <_level i:nil="true"/>
+          <_selection i:nil="true"/>
+          <_title>session1B</_title>
+        </Session>
+        <Session>
+          <_description i:nil="true"/>
+          <_level i:nil="true"/>
+          <_selection i:nil="true"/>
+          <_title>session1C</_title>
+        </Session>
+      </_sessions>
+      <_website i:nil="true"/>
+    </Speaker>
+    <Speaker>
+      <_bio i:nil="true"/>
+      <_email i:nil="true"/>
+      <_headshotUrl i:nil="true"/>
+      <_homeTown i:nil="true"/>
+      <_name>speaker2</_name>
+      <_notesToOrganizer i:nil="true"/>
+      <_sessions>
+        <Session>
+          <_description i:nil="true"/>
+          <_level i:nil="true"/>
+          <_selection i:nil="true"/>
+          <_title>session2A</_title>
+        </Session>
+        <Session>
+          <_description i:nil="true"/>
+          <_level i:nil="true"/>
+          <_selection i:nil="true"/>
+          <_title>session2B</_title>
+        </Session>
+        <Session>
+          <_description i:nil="true"/>
+          <_level i:nil="true"/>
+          <_selection i:nil="true"/>
+          <_title>session2C</_title>
+        </Session>
+      </_sessions>
+      <_website i:nil="true"/>
+    </Speaker>
+  </_speakers>
+  <_timeSlots/>
+  <_unselectedSessions/>
+</ViewModel>
