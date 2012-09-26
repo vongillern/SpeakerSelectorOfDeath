@@ -23,35 +23,235 @@ namespace SpeakerSelectorOfDeath
     /// </summary>
     public partial class MainWindow : Window
     {
+        ViewModel _viewModel;
+
         public MainWindow()
         {
             InitializeComponent();
+            this.Loaded += MainWindow_Loaded;
 
-            var viewModel = new ViewModel();
-
-            var speaker1 = new Speaker();
-            speaker1.Name = "speaker1";
-            speaker1.Sessions.Add(new Session { Title = "session1A" });
-            speaker1.Sessions.Add(new Session { Title = "session1B" });
-            speaker1.Sessions.Add(new Session { Title = "session1C" });
-            viewModel.Speakers.Add(speaker1);
-
-            var speaker2 = new Speaker();
-            speaker2.Name = "speaker2";
-            speaker2.Sessions.Add(new Session { Title = "session2A" });
-            speaker2.Sessions.Add(new Session { Title = "session2B" });
-            speaker2.Sessions.Add(new Session { Title = "session2C" });
-            viewModel.Speakers.Add(speaker2);
-
-            viewModel.SelectedSessions.Add(speaker1.Sessions.First());
-            viewModel.SelectedSessions.Add(speaker2.Sessions.First());
-
-            var data = WriteObject<ViewModel>(viewModel);
-            
+            //var data = WriteObject<ViewModel>(viewModel);
         }
 
+        void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            _viewModel = new ViewModel();
+
+            ISpeakerProvider speakerProvider = new IccSpeakerProvider(@"C:\Users\Jon\Downloads\sample submissions.csv");
+
+            var speakers = speakerProvider.GetSpeakerSessions().Take(5);
+
+            _viewModel.Speakers.AddRange(speakers);
+            _viewModel.UnselectedSessions.AddRange(speakers.SelectMany(s => s.Sessions));
+
+            InitializeRoomsAndTimes();
+
+            this.DataContext = _viewModel;
+        }
+
+
+        private void InitializeRoomsAndTimes()
+        {
+            List<string> roomNames = new List<string> { "Auditorium", "116E", "118E", "119E", "121E", "125E", "123E", "126E" };
+
+            _viewModel.TimeSlots = new ObservableCollection<TimeSlot> 
+            { 
+                TimeSlot.Create(9, 0, 75),
+                TimeSlot.Create(10, 30, 75),
+                TimeSlot.Create(12, 45, 75),
+                TimeSlot.Create(14, 15, 75),
+                TimeSlot.Create(15, 45, 75),
+            };
+
+            foreach (var roomName in roomNames)
+            {
+                var room = new Room { RoomName = roomName };
+
+                foreach (var timeSlot in _viewModel.TimeSlots)
+                {
+                    room.Selections.Add(new Selection { Room = room, TimeSlot = timeSlot });
+                }
+
+                _viewModel.Rooms.Add(room);
+
+            }
+
+            
+
+        }
+
+
+        #region Rules Drag and Drop
+
+        //
+        //http://blogs.gotdotnet.com/jaimer/archive/2007/07/12/drag-drop-in-wpf-explained-end-to-end.aspx
+        //
+
+        Point _startPoint = new Point();
+        bool IsDragging = false;
+
+        //we will only allow sessions to be dragged onto selections
+
+        private void Session_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed && !IsDragging)
+            {
+                Point position = e.GetPosition(null);
+
+                if (Math.Abs(position.X - _startPoint.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                    Math.Abs(position.Y - _startPoint.Y) > SystemParameters.MinimumVerticalDragDistance)
+                {
+                    StartDrag(sender, e);
+                }
+            }
+
+        }
+
+        private void Session_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _startPoint = e.GetPosition(null);
+        }
+
+        private void StartDrag(object sender, MouseEventArgs e)
+        {
+            IsDragging = true;
+
+            Panel panel = (Panel)sender;
+            object dataContext = panel.DataContext;
+
+            if (dataContext != null)
+            {
+                DataObject data = new DataObject(dataContext.GetType(), dataContext);
+                DragDropEffects de = DragDrop.DoDragDrop((DependencyObject)sender, data, DragDropEffects.Move);
+            }
+            IsDragging = false;
+        }
+
+        private void StartDragCustomCursor(object sender, MouseEventArgs e)
+        {
+            Panel panel = (Panel)sender;
+            object dataContext = panel.DataContext;
+
+            GiveFeedbackEventHandler handler = new GiveFeedbackEventHandler(DragSource_GiveFeedback);
+
+            ((FrameworkElement)sender).GiveFeedback += handler;
+            IsDragging = true;
+            DataObject data = new DataObject(dataContext.GetType(), dataContext);
+
+            DragDropEffects de = DragDrop.DoDragDrop(((FrameworkElement)sender), data, DragDropEffects.Move);
+            ((FrameworkElement)sender).GiveFeedback -= handler;
+            IsDragging = false;
+        }
+
+        void DragSource_GiveFeedback(object sender, GiveFeedbackEventArgs e)
+        {
+            try
+            {
+                Mouse.SetCursor(Cursors.Hand);
+
+                e.UseDefaultCursors = false;
+                e.Handled = true;
+            }
+            finally { }
+        }
+
+        private void Selection_Drop(object sender, DragEventArgs e)
+        {
+            
+            //if we are dropping a session on a selection
+
+            Panel panel = sender as Panel;
+            if (panel != null && panel.DataContext is Selection)
+            {
+                var targetDropSelection = (Selection)panel.DataContext;
+
+                if (e.Data.GetDataPresent(typeof(Session)))
+                {
+                    Session droppingSession = (Session)e.Data.GetData(typeof(Session));
+
+                    if (droppingSession != targetDropSelection.Session)
+                    {
+                        if (droppingSession.Selection != null && targetDropSelection.Session != null)
+                        {
+                            //if we're dragging a session that is already scheduled, to a different spot, just swap them instead of 
+                            //adding one to the unselected sessions list
+
+                            var originalSourceSelection = droppingSession.Selection;
+                            var sessionDroppedOnTo = targetDropSelection.Session;
+
+                            droppingSession.Selection = targetDropSelection;
+                            originalSourceSelection.Session = sessionDroppedOnTo;
+                            
+                            return;
+                        }
+
+                        //if there was an old session, add it to unselected list
+                        if (targetDropSelection.Session != null)
+                        {
+                            targetDropSelection.Session.Selection = null;
+                            _viewModel.UnselectedSessions.Add(targetDropSelection.Session);
+                        }
+
+                        if (droppingSession.Selection != null)
+                            droppingSession.Selection.Session = null;
+
+                        //if unselected had the dropped session, remove it
+                        _viewModel.UnselectedSessions.Remove(droppingSession);
+
+                        targetDropSelection.Session = droppingSession;
+                    }
+
+                }
+
+            }
+            else if (sender == UnselectedSessionsBox)
+            {
+                if (e.Data.GetDataPresent(typeof(Session)))
+                {
+                    Session droppingSession = (Session)e.Data.GetData(typeof(Session));
+
+                    droppingSession.Selection.Session = null;
+                    droppingSession.Selection = null;
+                    
+                    _viewModel.UnselectedSessions.Add(droppingSession);
+                }
+            }
+            //panel.Background = Brushes.Transparent;
+        }
+
+        private void Selection_DragEnter(object sender, DragEventArgs e)
+        {
+            //Panel potentialDropTarget = (Panel)sender;
+            //if (potentialDropTarget.DataContext is Session)
+            //{
+            //    if (e.Data.GetDataPresent(typeof(Session)))
+            //    {
+            //        Session droppingSession = (Session)e.Data.GetData(typeof(Session));
+            //        if (droppingSession.ContainsInTree(potentialDropTarget.DataContext as RuleCategory))
+            //            potentialDropTarget.Background = Brushes.Pink;
+            //        else
+            //            potentialDropTarget.Background = Brushes.LightGreen;
+            //    }
+            //    else
+            //        potentialDropTarget.Background = Brushes.LightGreen;
+            //}
+            //else if (potentialDropTarget.DataContext is Rule)
+            //    potentialDropTarget.Background = Brushes.Pink;
+        }
+
+        private void Selection_DragLeave(object sender, DragEventArgs e)
+        {
+            //Panel panel = (Panel)sender;
+            //panel.Background = Brushes.Transparent;
+        }
+
+        #endregion
+
+
+        //this sucks
         public static string WriteObject<T>(T value)
         {
+            
             using (MemoryStream stream = new MemoryStream())
             {
                 DataContractSerializer ser = new DataContractSerializer(typeof(T));
@@ -69,6 +269,8 @@ namespace SpeakerSelectorOfDeath
     [Serializable]
     public class ViewModel : INotifyPropertyChanged
     {
+
+
         private ObservableCollection<Speaker> _speakers = new ObservableCollection<Speaker>();
         public ObservableCollection<Speaker> Speakers
         {
@@ -125,7 +327,7 @@ namespace SpeakerSelectorOfDeath
             }
         }
 
-        private ObservableCollection<TimeSlot> _timeSlots = new ObservableCollection<TimeSlot>();
+        private ObservableCollection<TimeSlot> _timeSlots;
         public ObservableCollection<TimeSlot> TimeSlots
         {
             get { return _timeSlots; }
@@ -258,18 +460,16 @@ namespace SpeakerSelectorOfDeath
             }
         }
 
+        public void AddSession(Session session)
+        {
+            _sessions.Add(session);
+            session.Speaker = this;
+        }
+
         private ObservableCollection<Session> _sessions = new ObservableCollection<Session>();
         public ObservableCollection<Session> Sessions
         {
             get { return _sessions; }
-            set
-            {
-                if (_sessions != value)
-                {
-                    _sessions = value;
-                    FirePropertyChanged("Sessions");
-                }
-            }
         }
         
 
@@ -333,6 +533,35 @@ namespace SpeakerSelectorOfDeath
             }
         }
 
+        private int _rating;
+        public int Rating
+        {
+            get { return _rating; }
+            set
+            {
+                if (_rating != value)
+                {
+                    _rating = value;
+                    FirePropertyChanged("Rating");
+                }
+            }
+        }
+        
+
+        private Speaker _speaker;
+        public Speaker Speaker
+        {
+            get { return _speaker; }
+            set
+            {
+                if (_speaker != value)
+                {
+                    _speaker = value;
+                    FirePropertyChanged("Speaker");
+                }
+            }
+        }
+
         private Selection _selection;
         public Selection Selection
         {
@@ -342,11 +571,19 @@ namespace SpeakerSelectorOfDeath
                 if (_selection != value)
                 {
                     _selection = value;
+                    if (_selection != null)
+                        _selection.Session = this;
                     FirePropertyChanged("Selection");
                 }
             }
         }
         
+        
+
+        public override string ToString()
+        {
+            return "Session: " + Title;
+        }
 
         #region INotifyPropertyChanged Members
 
@@ -393,7 +630,25 @@ namespace SpeakerSelectorOfDeath
                 }
             }
         }
-        
+
+        private ObservableCollection<Selection> _selections = new ObservableCollection<Selection>();
+        public ObservableCollection<Selection> Selections
+        {
+            get { return _selections; }
+            set
+            {
+                if (_selections != value)
+                {
+                    _selections = value;
+                    FirePropertyChanged("Selections");
+                }
+            }
+        }
+
+        public override string ToString()
+        {
+            return "Room: " + RoomName;
+        }
 
         #region INotifyPropertyChanged Members
 
@@ -410,23 +665,38 @@ namespace SpeakerSelectorOfDeath
         
     }
 
+
+
     [Serializable]
     public class TimeSlot : INotifyPropertyChanged
     {
-        private DateTime _startTime;
-        public DateTime StartTime
+        public static TimeSlot Create(int hour, int minute, int minuteLength)
         {
-            get { return _startTime; }
+            //we might mess with this later if we ever had a multi-day conference
+            //but right now it doesn't really matter
+            var baseDate = new DateTime(2012, 10, 27);
+
+            return new TimeSlot
+            {
+                StartDate = baseDate.AddHours(hour).AddMinutes(minute),
+                EndDate = baseDate.AddHours(hour).AddMinutes(minute + minuteLength),
+            };
+        }
+
+        private DateTime _startDate;
+        public DateTime StartDate
+        {
+            get { return _startDate; }
             set
             {
-                if (_startTime != value)
+                if (_startDate != value)
                 {
-                    _startTime = value;
-                    FirePropertyChanged("StartTime");
+                    _startDate = value;
+                    FirePropertyChanged("StartDate");
                 }
             }
         }
-
+        
         private DateTime _endDate;
         public DateTime EndDate
         {
@@ -440,7 +710,11 @@ namespace SpeakerSelectorOfDeath
                 }
             }
         }
-        
+
+        public override string ToString()
+        {
+            return "TimeSlot: " + StartDate.ToString("HH:MM");
+        }
 
         #region INotifyPropertyChanged Members
 
@@ -458,7 +732,6 @@ namespace SpeakerSelectorOfDeath
         
     }
 
-    [Serializable]
     public class Selection : INotifyPropertyChanged
     {
 
@@ -499,10 +772,13 @@ namespace SpeakerSelectorOfDeath
                 if (_session != value)
                 {
                     _session = value;
+                    if (_session != null)
+                        _session.Selection = this;
                     FirePropertyChanged("Session");
                 }
             }
         }
+
         
 
         #region INotifyPropertyChanged Members
@@ -518,5 +794,48 @@ namespace SpeakerSelectorOfDeath
 
         #endregion
         
+        
     }
+
+    public static class Extensions
+    {
+        public static void AddRange<T>(this ObservableCollection<T> collection, IEnumerable<T> items)
+        {
+            foreach (T t in items)
+            {
+                collection.Add(t);
+            }
+        }
+        
+    }
+
+    public class SessionTemplateSelector : DataTemplateSelector
+    {
+
+        /// <summary>
+        /// initializes SessionTemplateSelector
+        /// </summary>
+        public SessionTemplateSelector()
+        {
+        }
+        
+        public DataTemplate NonNullTemplate { get; set; }
+        
+
+        
+
+        public override DataTemplate SelectTemplate(object item, DependencyObject container)
+        {
+            if (item == null)
+                return null;
+
+            return NonNullTemplate;
+
+            //return base.SelectTemplate(item, container);
+        }
+        
+            
+        
+    }
+
 }
