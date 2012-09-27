@@ -5,7 +5,7 @@
         Title="MainWindow" Height="800" Width="1100">
     <Window.Resources>
         <DataTemplate x:Key="SelectedSession">
-            <StackPanel Background="Pink" Width="100" Height="100" Margin="5"
+            <StackPanel Background="LightBlue" Width="100" Height="100" Margin="5"
                         PreviewMouseLeftButtonDown="Session_PreviewMouseLeftButtonDown"
                         PreviewMouseMove="Session_PreviewMouseMove"
                         >
@@ -16,10 +16,10 @@
                     <StackPanel MaxWidth="300">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{Binding Title}" FontWeight="Bold"/>
-                            <TextBlock Text="{Binding Level}" />
+                            <TextBlock Text="{Binding Level, StringFormat={} ({0})}" />
                         </StackPanel>
                         <TextBlock Text="{Binding Speaker.Name}" />
-                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Margin="5"/>
                     </StackPanel>
                 </StackPanel.ToolTip>
             </StackPanel>
@@ -34,8 +34,12 @@
     <DockPanel LastChildFill="True" Background="Gray" >
 
         
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
+            <Button Content="Save" Click="SaveButton_Click" />
+            <Button Content="Load" Click="LoadButton_Click" />
+        </StackPanel>
 
-        <ItemsControl ItemsSource="{Binding Rooms}" DockPanel.Dock="Top">
+        <ItemsControl ItemsSource="{Binding Rooms}" DockPanel.Dock="Top" HorizontalAlignment="Center">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel Orientation="Horizontal" />
@@ -47,26 +51,27 @@
 
                     <StackPanel >
                         <TextBlock Text="{Binding RoomName}" FontWeight="Bold" FontSize="14"  Margin="5"/>
-
+                        <TextBox Text="{Binding TrackName}" FontWeight="Bold" FontSize="14"  Margin="5"/>
                         <ItemsControl ItemsSource="{Binding Selections}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Vertical">
                                         
                                     
-                                        <StackPanel Width="125" Height="100" Margin="5" Background="White" 
+                                        <DockPanel Width="125" Height="100" Margin="5" Background="White" 
                                                     AllowDrop="True"
                                                     DragEnter="Selection_DragEnter"
                                                     DragLeave="Selection_DragLeave"
                                                     Drop="Selection_Drop"
                                                     >
-                                            <TextBlock Text="{Binding TimeSlot.StartDate, StringFormat={}{0:h:mm}}" />
+                                            <TextBlock Text="{Binding TimeSlot.StartDate, StringFormat={}{0:h:mm}}" DockPanel.Dock="Top"/>
 
 
                                             <StackPanel Background="LightGreen"
-                                                PreviewMouseLeftButtonDown="Session_PreviewMouseLeftButtonDown"
-                                                PreviewMouseMove="Session_PreviewMouseMove"
+                                                        PreviewMouseLeftButtonDown="Session_PreviewMouseLeftButtonDown"
+                                                        PreviewMouseMove="Session_PreviewMouseMove"
                                                         DataContext="{Binding Session}"
+                                                        VerticalAlignment="Stretch"
                                             >
                                                 <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap"/>
                                                 <TextBlock Text="{Binding Speaker.Name}" />
@@ -75,14 +80,14 @@
                                                     <StackPanel MaxWidth="300">
                                                         <StackPanel Orientation="Horizontal">
                                                             <TextBlock Text="{Binding Title}" FontWeight="Bold"/>
-                                                            <TextBlock Text="{Binding Level}" />
+                                                            <TextBlock Text="{Binding Level, StringFormat={} ({0})}" />
                                                         </StackPanel>
                                                         <TextBlock Text="{Binding Speaker.Name}" />
-                                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap"/>
+                                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap"  Margin="5"/>
                                                     </StackPanel>
                                                 </StackPanel.ToolTip>
                                             </StackPanel>
-                                        </StackPanel>
+                                        </DockPanel>
 
                                         
                                         
@@ -97,7 +102,7 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-
+        
 
         <ScrollViewer>
             <ItemsControl ItemsSource="{Binding UnselectedSessions}" 

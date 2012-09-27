@@ -15,6 +15,8 @@ using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
 using System.IO;
+using Microsoft.Win32;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace SpeakerSelectorOfDeath
 {
@@ -39,7 +41,7 @@ namespace SpeakerSelectorOfDeath
 
             ISpeakerProvider speakerProvider = new IccSpeakerProvider(@"C:\Users\Jon\Downloads\sample submissions.csv");
 
-            var speakers = speakerProvider.GetSpeakerSessions().Take(5);
+            var speakers = speakerProvider.GetSpeakerSessions();
 
             _viewModel.Speakers.AddRange(speakers);
             _viewModel.UnselectedSessions.AddRange(speakers.SelectMany(s => s.Sessions));
@@ -263,6 +265,44 @@ namespace SpeakerSelectorOfDeath
                 return data;
             }
             
+        }
+
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog sfd = new SaveFileDialog();
+            sfd.Title = "Save Speaker Selections";
+            sfd.DefaultExt = "ssod";
+            sfd.Filter = "Speaker Selections OF DEATH (*.ssod)|*.ssod";
+            sfd.RestoreDirectory = true;
+
+            if (sfd.ShowDialog() == true)
+            {
+                using (Stream stream = File.Open(sfd.FileName, FileMode.OpenOrCreate))
+                {
+                    BinaryFormatter serializer = new BinaryFormatter();
+                    serializer.Serialize(stream, _viewModel);
+                }
+            }
+        }
+
+        private void LoadButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Title = "Load Speaker Selections";
+            ofd.DefaultExt = "ssod";
+            ofd.Filter = "Speaker Selections OF DEATH (*.ssod)|*.ssod";
+            ofd.RestoreDirectory = true;
+
+            if (ofd.ShowDialog() == true)
+            {
+                using (Stream stream = File.Open(ofd.FileName, FileMode.OpenOrCreate))
+                {
+                    BinaryFormatter serializer = new BinaryFormatter();
+                    ViewModel viewModel = serializer.Deserialize(stream) as ViewModel;
+                    _viewModel = viewModel;
+                    this.DataContext = _viewModel;
+                }
+            }
         }
     }
 
@@ -732,6 +772,7 @@ namespace SpeakerSelectorOfDeath
         
     }
 
+    [Serializable]
     public class Selection : INotifyPropertyChanged
     {
 
