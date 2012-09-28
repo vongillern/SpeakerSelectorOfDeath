@@ -8,6 +8,7 @@
             <StackPanel Background="LightBlue" Width="100" Height="100" Margin="5"
                         PreviewMouseLeftButtonDown="Session_PreviewMouseLeftButtonDown"
                         PreviewMouseMove="Session_PreviewMouseMove"
+                        ToolTipService.ShowDuration="120000"
                         >
                 <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap"/>
                 <TextBlock Text="{Binding Speaker.Name}" />
@@ -19,6 +20,7 @@
                             <TextBlock Text="{Binding Level, StringFormat={} ({0})}" />
                         </StackPanel>
                         <TextBlock Text="{Binding Speaker.Name}" />
+                        <TextBlock Text="{Binding Speaker.HomeTown}" />
                         <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Margin="5"/>
                     </StackPanel>
                 </StackPanel.ToolTip>
@@ -37,6 +39,7 @@
         <StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
             <Button Content="Save" Click="SaveButton_Click" />
             <Button Content="Load" Click="LoadButton_Click" />
+            <Button Content="Export To Greg's Format" Click="ExportButton_Click" />
         </StackPanel>
 
         <ItemsControl ItemsSource="{Binding Rooms}" DockPanel.Dock="Top" HorizontalAlignment="Center">
@@ -72,6 +75,8 @@
                                                         PreviewMouseMove="Session_PreviewMouseMove"
                                                         DataContext="{Binding Session}"
                                                         VerticalAlignment="Stretch"
+                                                        ToolTipService.ShowDuration="120000"
+                                                        
                                             >
                                                 <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap"/>
                                                 <TextBlock Text="{Binding Speaker.Name}" />
@@ -83,6 +88,7 @@
                                                             <TextBlock Text="{Binding Level, StringFormat={} ({0})}" />
                                                         </StackPanel>
                                                         <TextBlock Text="{Binding Speaker.Name}" />
+                                                        <TextBlock Text="{Binding Speaker.HomeTown}" />
                                                         <TextBlock Text="{Binding Description}" TextWrapping="Wrap"  Margin="5"/>
                                                     </StackPanel>
                                                 </StackPanel.ToolTip>

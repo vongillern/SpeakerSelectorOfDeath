@@ -37,16 +37,17 @@ namespace SpeakerSelectorOfDeath
 
         void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            
             _viewModel = new ViewModel();
 
-            ISpeakerProvider speakerProvider = new IccSpeakerProvider(@"C:\Users\Jon\Downloads\sample submissions.csv");
+            //ISpeakerProvider speakerProvider = new IccSpeakerProvider(@"C:\Users\Jon\Downloads\sample submissions.csv");
 
-            var speakers = speakerProvider.GetSpeakerSessions();
+            //var speakers = speakerProvider.GetSpeakerSessions();
 
-            _viewModel.Speakers.AddRange(speakers);
-            _viewModel.UnselectedSessions.AddRange(speakers.SelectMany(s => s.Sessions));
+            //_viewModel.Speakers.AddRange(speakers);
+            //_viewModel.UnselectedSessions.AddRange(speakers.SelectMany(s => s.Sessions));
 
-            InitializeRoomsAndTimes();
+            //InitializeRoomsAndTimes();
 
             this.DataContext = _viewModel;
         }
@@ -83,7 +84,7 @@ namespace SpeakerSelectorOfDeath
         }
 
 
-        #region Rules Drag and Drop
+        #region Session Drag and Drop
 
         //
         //http://blogs.gotdotnet.com/jaimer/archive/2007/07/12/drag-drop-in-wpf-explained-end-to-end.aspx
@@ -211,11 +212,14 @@ namespace SpeakerSelectorOfDeath
                 if (e.Data.GetDataPresent(typeof(Session)))
                 {
                     Session droppingSession = (Session)e.Data.GetData(typeof(Session));
+                    //don't do anything with a drop from unselected to unselected
+                    if (!_viewModel.UnselectedSessions.Contains(droppingSession))
+                    {
+                        droppingSession.Selection.Session = null;
+                        droppingSession.Selection = null;
 
-                    droppingSession.Selection.Session = null;
-                    droppingSession.Selection = null;
-                    
-                    _viewModel.UnselectedSessions.Add(droppingSession);
+                        _viewModel.UnselectedSessions.Add(droppingSession);
+                    }
                 }
             }
             //panel.Background = Brushes.Transparent;
@@ -301,6 +305,48 @@ namespace SpeakerSelectorOfDeath
                     ViewModel viewModel = serializer.Deserialize(stream) as ViewModel;
                     _viewModel = viewModel;
                     this.DataContext = _viewModel;
+                }
+            }
+        }
+
+        private void ExportButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog sfd = new SaveFileDialog();
+            sfd.Title = "Greg's stuff";
+            sfd.DefaultExt = "csv";
+            sfd.Filter = "Gregs selections (*.csv)|*.csv";
+            sfd.RestoreDirectory = true;
+
+            if (sfd.ShowDialog() == true)
+            {
+                var fileBuilder = new StringBuilder();
+                int speakerKey = 1;
+                int sessionKey = 1;
+                foreach (Speaker speaker in _viewModel.Speakers)
+                {
+                    foreach (Session session in speaker.Sessions)
+                    {
+                        var lineBuilder = new StringBuilder();
+
+                        lineBuilder.Append(speakerKey); lineBuilder.Append(",");
+                        lineBuilder.Append(sessionKey); lineBuilder.Append(",");
+                        lineBuilder.Append(session.Selection != null); lineBuilder.Append(",");
+                        lineBuilder.Append(session.Selection != null ? session.Selection.Room.RoomName : ""); lineBuilder.Append(",");
+                        lineBuilder.Append(session.Selection != null ? session.Selection.TimeSlot.StartDate.ToString("h:mm") : ""); lineBuilder.Append(",");
+                        lineBuilder.Append(speaker.Name); lineBuilder.Append(",");
+                        lineBuilder.Append(session.Level); lineBuilder.Append(",");
+                        lineBuilder.Append(session.Title); lineBuilder.Append(",");
+
+                        fileBuilder.AppendLine(lineBuilder.ToString());                        
+                        
+                        sessionKey++;
+                    }
+                    speakerKey++;
+                }
+
+                using (StreamWriter writer = new StreamWriter(sfd.FileName))
+                {
+                    writer.Write(fileBuilder.ToString());
                 }
             }
         }
