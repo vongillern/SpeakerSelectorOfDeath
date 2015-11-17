@@ -17,6 +17,8 @@ using System.Runtime.Serialization;
 using System.IO;
 using Microsoft.Win32;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace SpeakerSelectorOfDeath
 {
@@ -40,7 +42,7 @@ namespace SpeakerSelectorOfDeath
             
             _viewModel = new ViewModel();
 
-            //ISpeakerProvider speakerProvider = new IccSpeakerProvider(@"C:\Users\Jon\Downloads\sample submissions.csv");
+            //ISpeakerProvider speakerProvider = new IccSpeakerProvider(@"C:\Users\Jon\Downloads\icc2015.csv");
 
             //var speakers = speakerProvider.GetSpeakerSessions();
 
@@ -55,7 +57,18 @@ namespace SpeakerSelectorOfDeath
 
         private void InitializeRoomsAndTimes()
         {
-            List<string> roomNames = new List<string> { "Auditorium", "116E", "118E", "119E", "121E", "125E", "123E", "126E" };
+            //List<string> roomNames = new List<string> { "Auditorium", "116E", "118E", "119E", "121E", "125E", "123E", "126E" };
+            List<string> roomNames = new List<string> 
+            { 
+                "Room A (50)",
+                "Room B (50)",
+                "Room C (30)",
+                "Room D (30)",
+                "Room E (30)",
+                "Room F (30)",
+                "Room G (30)",
+                "Room H (30)",
+            };
 
             _viewModel.TimeSlots = new ObservableCollection<TimeSlot> 
             { 
@@ -350,6 +363,21 @@ namespace SpeakerSelectorOfDeath
                 }
             }
         }
+
+        private void EmailCsv_Click(object sender, RoutedEventArgs e)
+        {
+            var haveSessions = new List<string>();
+            var noSessions = new List<string>();
+
+            foreach (Speaker speaker in _viewModel.Speakers)
+            {
+                if (speaker.Sessions.Any(s => s.Selection != null))
+                    haveSessions.Add(speaker.Email);
+                else
+                    noSessions.Add(speaker.Email);
+                
+            }
+        }
     }
 
     [Serializable]
@@ -357,6 +385,41 @@ namespace SpeakerSelectorOfDeath
     {
 
 
+        private string _search = "";
+        public string Search
+        {
+            get { return _search; }
+            set
+            {
+                if (_search == value)
+                    return;
+                _search = value;
+                Highlight();
+                if (PropertyChanged != null)
+                    PropertyChanged(this, new PropertyChangedEventArgs("Search"));
+            }
+        }
+
+        private void Highlight()
+        {
+            
+
+            var searchRegex = new Regex(_search, RegexOptions.IgnoreCase);
+            if (_search == "")
+                searchRegex = new Regex(@"asdofiwoinfoinas;donifosianwoinwef", RegexOptions.IgnoreCase);
+
+            foreach (var speaker in Speakers)
+            {
+                var speakerHighlight = searchRegex.IsMatch(speaker.Name);
+
+                foreach (var session in speaker.Sessions)
+                {
+                    session.Highlight = searchRegex.IsMatch(session.Title) || speakerHighlight;
+                }
+            }
+        }
+
+        
         private ObservableCollection<Speaker> _speakers = new ObservableCollection<Speaker>();
         public ObservableCollection<Speaker> Speakers
         {
@@ -577,6 +640,7 @@ namespace SpeakerSelectorOfDeath
     [Serializable]
     public class Session : INotifyPropertyChanged
     {
+        
         private string _level;
         public string Level
         {
@@ -663,7 +727,20 @@ namespace SpeakerSelectorOfDeath
                 }
             }
         }
-        
+
+
+        private bool _highlight;
+        public bool Highlight
+        {
+            get { return _highlight; }
+            set
+            {
+                if (_highlight == value)
+                    return;
+                _highlight = value;
+                FirePropertyChanged("Highlight");
+            }
+        }
         
 
         public override string ToString()
@@ -924,5 +1001,26 @@ namespace SpeakerSelectorOfDeath
             
         
     }
+
+    public class BrushColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if ((bool)value)
+            {
+                {
+                    return new SolidColorBrush(Colors.Pink);
+                }
+            }
+            return new SolidColorBrush(Colors.LightGreen);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+
+    }
+
 
 }
