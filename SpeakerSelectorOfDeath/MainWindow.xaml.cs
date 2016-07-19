@@ -316,7 +316,7 @@ namespace SpeakerSelectorOfDeath
             sfd.DefaultExt = "csv";
             sfd.Filter = "Gregs selections (*.csv)|*.csv";
             sfd.RestoreDirectory = true;
-
+            HashSet<string> emails = new HashSet<string>();
             if (sfd.ShowDialog() == true)
             {
                 var fileBuilder = new StringBuilder();
@@ -338,10 +338,12 @@ namespace SpeakerSelectorOfDeath
                         lineBuilder.Append(session.Title); lineBuilder.Append(",");
 
                         fileBuilder.AppendLine(lineBuilder.ToString());                        
-                        
+
                         sessionKey++;
                     }
                     speakerKey++;
+
+                    emails.Add(speaker.Email);
                 }
 
                 using (StreamWriter writer = new StreamWriter(sfd.FileName))
