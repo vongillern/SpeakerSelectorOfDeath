@@ -4,13 +4,17 @@
         xmlns:local="clr-namespace:SpeakerSelectorOfDeath"
         Title="MainWindow" Height="800" Width="1100">
     <Window.Resources>
+        <local:BrushColorConverter x:Key="BConverter"></local:BrushColorConverter>
+
         <DataTemplate x:Key="SelectedSession">
-            <StackPanel Background="LightBlue" Width="100" Height="100" Margin="5"
+            <StackPanel Background="{Binding Highlight, Converter={StaticResource BConverter}}" 
+                        Width="100" Height="100" Margin="5"
                         PreviewMouseLeftButtonDown="Session_PreviewMouseLeftButtonDown"
                         PreviewMouseMove="Session_PreviewMouseMove"
                         ToolTipService.ShowDuration="120000"
                         >
                 <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Highlight}" />
                 <TextBlock Text="{Binding Speaker.Name}" />
 
                 <StackPanel.ToolTip>
@@ -19,6 +23,7 @@
                             <TextBlock Text="{Binding Title}" FontWeight="Bold"/>
                             <TextBlock Text="{Binding Level, StringFormat={} ({0})}" />
                         </StackPanel>
+                        
                         <TextBlock Text="{Binding Speaker.Name}" />
                         <TextBlock Text="{Binding Speaker.HomeTown}" />
                         <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Margin="5"/>
@@ -28,6 +33,7 @@
 
         </DataTemplate>
 
+            
         
 
 
@@ -40,6 +46,8 @@
             <Button Content="Save" Click="SaveButton_Click" />
             <Button Content="Load" Click="LoadButton_Click" />
             <Button Content="Export To Greg's Format" Click="ExportButton_Click" />
+            <Button Content="Emails CSV" Click="EmailCsv_Click" />
+            <TextBox Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" Width="200"></TextBox>
         </StackPanel>
 
         <ItemsControl ItemsSource="{Binding Rooms}" DockPanel.Dock="Top" HorizontalAlignment="Center">
@@ -70,7 +78,7 @@
                                             <TextBlock Text="{Binding TimeSlot.StartDate, StringFormat={}{0:h:mm}}" DockPanel.Dock="Top"/>
 
 
-                                            <StackPanel Background="LightGreen"
+                                            <StackPanel Background="{Binding Highlight, Converter={StaticResource BConverter}}" 
                                                         PreviewMouseLeftButtonDown="Session_PreviewMouseLeftButtonDown"
                                                         PreviewMouseMove="Session_PreviewMouseMove"
                                                         DataContext="{Binding Session}"
@@ -79,6 +87,7 @@
                                                         
                                             >
                                                 <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap"/>
+                                                
                                                 <TextBlock Text="{Binding Speaker.Name}" />
 
                                                 <StackPanel.ToolTip>
